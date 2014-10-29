@@ -708,20 +708,23 @@ class Yandex
         }
     }
 
-    /**
-     * bindData
-     *
-     * @return void
-     */
-     protected function _bindData()
-     {
-         $wordstat = preg_split('/,/', $this->response->wordstat);
-         $this->wordstat = array();
-         foreach ($wordstat as $word) {
-             list($word, $count) = preg_split('/:/', $word);
-             $this->wordstat[$word] = intval(trim($count));
-         }
-     }
+/**
+ * bindData
+ *
+ * @return void
+ */
+    protected function _bindData()
+    {
+        $wordstat = preg_split('/,/', $this->response->wordstat);
+        $this->wordstat = array();
+        foreach ($wordstat as $word) {
+            if (empty($word)) {
+                continue;
+            }
+            list($word, $count) = preg_split('/:/', $word);
+            $this->wordstat[$word] = intval(trim($count));
+        }
+    }
 
     /**
      * get total results
