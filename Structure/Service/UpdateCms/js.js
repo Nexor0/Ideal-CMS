@@ -72,7 +72,7 @@ function Update(moduleName, version, currentVersion, url, modalBox) {
             dataType: 'json',
             data: data,
             success: function (result) {
-                var check = update.dataCheck(result);
+                var check = update.dataCheck(result, data.action);
                 if (check) {
                     update.run(result, data.action);
                 } else {
@@ -91,7 +91,7 @@ function Update(moduleName, version, currentVersion, url, modalBox) {
      * @param data
      * @returns {boolean}
      */
-    this.dataCheck = function(data) {
+    this.dataCheck = function(data, action) {
         // Если не получен структурированный результат выполнения действия и метод вызван не в первый раз,
         // выводим полученные данные
         if (data.error == 'undefined' && data != true ) {
@@ -126,10 +126,10 @@ function Update(moduleName, version, currentVersion, url, modalBox) {
     this.run = function(result, action) {
         // Выполненное действие
         action = action || null;
-
+        var countPre = 0;
+        var countAfter = 0;
         var data = {};
         $.extend(data, this.ajaxData);
-        var scriptsExecutes = 0;
         switch (action) {
             case null:
                 data.action = 'ajaxDownload';
@@ -141,21 +141,38 @@ function Update(moduleName, version, currentVersion, url, modalBox) {
                 data.action = 'ajaxGetUpdateScript';
                 break;
             case 'ajaxGetUpdateScript':
-                data.action = 'ajaxSwap';
+                data.action = 'ajaxRunScript';
                 break;
             case 'ajaxSwap':
                 data.action = 'ajaxRunScript';
                 break;
             case 'ajaxRunScript':
-                if (result.data != null && result.data.count != 'undefined') {
-                    scriptsExecutes = result.data.count;
-                }
-                if (scriptsExecutes > 0) {
-                    data.action = 'ajaxRunScript';
-                    scriptsExecutes = scriptsExecutes--;
-                } else {
+                //countPre
+                if (result.data != null) {
                     data.action = 'ajaxEndVersion';
                 }
+                if ((result.data.countPre != 'undefined' || result.data.countAfter != 'undefined')) {
+                    countPre = parseInt(result.data.countPre.count());
+                    countAfter = parseInt(result.data.countAfter.count());
+                    if (countPre == 0) {
+                        data.action = 'ajaxSwap';
+                        break
+                    }
+                }
+                if (countPre > 0) {
+                    data.action = 'ajaxRunScript';
+                    countPre--;
+                    if (countPre == 0) {
+                        data.action = 'ajaxSwap';
+                    }
+                    break
+                }
+                if (countAfter > 0) {
+                    data.action = 'ajaxRunScript';
+                    countAfter--;
+                    break
+                }
+                data.action = 'ajaxEndVersion';
                 break;
             case 'ajaxEndVersion':
                 if (result.data != null && result.data.next == 'true') {
